@@ -267,6 +267,22 @@ angular.module('dndLists', [])
             element.on('drop', function(event) {
                 event = event.originalEvent || event;
 
+                // Disallow drop if it comes from an external source or is not text.
+                // Usually we would use a custom drag type for this, but IE doesn't support that.
+                if (!dndDragTypeWorkaround.isDragging) return true;
+                if (!isDropAllowed(event.dataTransfer.types)) return true;
+
+                // Now check the dnd-allowed-types against the type of the incoming element
+                if (attr.dndAllowedTypes) {
+                    var allowed = scope.$eval(attr.dndAllowedTypes);
+                    if (angular.isArray(allowed) && allowed.indexOf(dndDragTypeWorkaround.dragType) === -1) {
+                        return true;
+                    }
+                }
+
+                // Check whether droping is disabled completely
+                if (attr.dndDisableIf && scope.$eval(attr.dndDisableIf)) return true;
+
                 // Unserialize the data that was serialized in dragstart. According to the HTML5 specs,
                 // the "Text" drag type will be converted to text/plain, but IE does not do that.
                 var transferredObject = JSON.parse(event.dataTransfer.getData("Text")
